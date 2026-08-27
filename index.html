@@ -117,6 +117,19 @@ font-weight:600;margin:0 0 8px}
     </div>
   </div>
 
+  <h3>TCMB verileri · ayda bir güncelle</h3>
+  <div class="grid" style="margin-bottom:6px">
+    <div><label>Enflasyon yıllık %</label><input type="number" step="0.01" id="iTufe"></div>
+    <div><label>Ankara konut yıllık %</label><input type="number" step="0.1" id="iKfeAnk"></div>
+    <div><label>Türkiye konut yıllık %</label><input type="number" step="0.1" id="iKfeTr"></div>
+    <div><label>Ankara KFE endeks</label><input type="number" step="0.1" id="iKfeEndeks"></div>
+  </div>
+  <div class="mini" style="margin-bottom:12px">
+    Bu dört sayıyı ayda bir TCMB'den alıp buraya yaz — 1 dakika sürer.
+    <a href="https://www.tcmb.gov.tr/wps/wcm/connect/TR/TCMB+TR/Main+Menu/Istatistikler/Enflasyon+Verileri/Tuketici+Fiyatlari" target="_blank" rel="noreferrer">Enflasyon → TCMB Tüketici Fiyatları</a>
+    <a href="https://www.tcmb.gov.tr/wps/wcm/connect/tr/tcmb+tr/main+menu/istatistikler/reel+sektor+istatistikleri/konut+fiyat+endeksi/" target="_blank" rel="noreferrer">Konut → TCMB KFE bülteni</a>
+  </div>
+
   <h3>Piyasa</h3>
   <div class="grid" style="margin-bottom:12px">
     <div><label>Konut kredisi aylık %</label><input type="number" step="0.01" id="iMort"></div>
@@ -166,7 +179,9 @@ const GECMIS_KEY = "konut.gecmis";
 const VARSAYILAN = {
   birikim: 1500000, tasarruf: 35000, odeme: 45000, vade: 120,
   m2: 32000, mort: 2.65, ppf: 38,
-  evFaiz: 1.20, evVade: 180, evAy: 6, evSicra: 25
+  evFaiz: 1.20, evVade: 180, evAy: 6, evSicra: 25,
+  // TCMB verileri - veri.json varsa oradan gelir, yoksa elle girilir
+  tufe: 31.75, kfeAnk: 26.6, kfeTr: 25.0, kfeEndeks: 234.8, sonVeriAy: ""
 };
 
 // veri.json gelmezse kullanilacak yedek (son bilinen kamuya acik degerler)
@@ -202,7 +217,7 @@ function birikimT(t){
 
 /* ---------- senaryolar ---------- */
 function senaryolar(){
-  const konutAylik = aylikOran(V.kfe_ank_yillik ?? 25);
+  const konutAylik = aylikOran(A.kfeAnk || 25);
   const m2Simdi = A.m2;
   const AY = 24;
 
@@ -271,9 +286,9 @@ function sinyalCiz(){
        `Konut kredisi ${A.mort.toFixed(2)}% aylık`,
        A.mort <= 1.80 ? "Eşiğin altında — talep çözülüyor"
                       : `Eşiğe (%1.80) %${((A.mort-1.80)/1.80*100).toFixed(0)} mesafe`);
-  const ry = V.kfe_ank_yillik - V.tufe_yillik;
+  const ry = A.kfeAnk - A.tufe;
   ekle(ry >= 0 ? "#A93A31" : "#2E7D63",
-       `Ankara konut ${V.kfe_ank_yillik}% · enflasyon ${V.tufe_yillik}%`,
+       `Ankara konut ${A.kfeAnk}% · enflasyon ${A.tufe}%`,
        ry >= 0 ? "Konut enflasyonu geçti — reel dönüş başlamış olabilir"
                : "Konut hâlâ enflasyonun gerisinde");
   if(V.reel && V.reel.ank_zirveden != null)
@@ -300,7 +315,7 @@ function hesapla(){
   $("kM2").textContent = tl(A.m2/1000) + "b";
   $("kKredi").textContent = tl(kredi/1000) + "b";
 
-  const reelAnk = ((1+V.kfe_ank_yillik/100)/(1+V.tufe_yillik/100)-1)*100;
+  const reelAnk = ((1+A.kfeAnk/100)/(1+A.tufe/100)-1)*100;
   $("kReel").textContent = f1(reelAnk) + "%";
   $("kReel").style.color = reelAnk < 0 ? "#2E7D63" : "#A93A31";
 
@@ -345,7 +360,8 @@ function gecmiseYaz(m2){
 
 const ALANLAR = {iBirikim:"birikim",iTasarruf:"tasarruf",iOdeme:"odeme",iVade:"vade",
   iM2:"m2",iMort:"mort",iPpf:"ppf",iEvFaiz:"evFaiz",iEvVade:"evVade",
-  iEvAy:"evAy",iEvSicra:"evSicra"};
+  iEvAy:"evAy",iEvSicra:"evSicra",
+  iTufe:"tufe",iKfeAnk:"kfeAnk",iKfeTr:"kfeTr",iKfeEndeks:"kfeEndeks"};
 
 function formaBas(){ for(const id in ALANLAR) $(id).value = A[ALANLAR[id]]; }
 function formdanOku(){
@@ -357,10 +373,10 @@ function formdanOku(){
 
 function m2Guncelle(oncekiEndeks){
   // KFE Ankara endeksi ilerledikce mahalle m2 fiyatini otomatik tasi
-  if(oncekiEndeks && V.kfe_ank_endeks && oncekiEndeks !== V.kfe_ank_endeks){
-    A.m2 = A.m2 * V.kfe_ank_endeks / oncekiEndeks;
+  if(oncekiEndeks && A.kfeEndeks && oncekiEndeks !== A.kfeEndeks){
+    A.m2 = A.m2 * A.kfeEndeks / oncekiEndeks;
   }
-  A.sonEndeks = V.kfe_ank_endeks;
+  A.sonEndeks = A.kfeEndeks;
 }
 
 function uyariGoster(baslik, icerik){
@@ -370,7 +386,7 @@ function uyariGoster(baslik, icerik){
 }
 
 async function veriYukle(){
-  let kaynak = "yedek";
+  let kaynak = "elle";
   try{
     const r = await fetch(VERI_URL + "?t=" + Date.now(), {cache:"no-store"});
     if(!r.ok) throw new Error(r.status);
@@ -384,19 +400,26 @@ async function veriYukle(){
     }catch(e2){}
   }
 
-  const g = V.guncelleme ? new Date(V.guncelleme) : null;
-  $("tazelik").textContent = g
-    ? `${V.son_ay} · ${g.toLocaleDateString("tr-TR",{day:"2-digit",month:"2-digit"})}`
-    : `${V.son_ay} · ${kaynak}`;
+  // veri.json yeni bir ay getirdiyse elle girilenlerin uzerine yaz
+  if(kaynak !== "elle" && V.son_ay && V.son_ay !== A.sonVeriAy){
+    if(V.tufe_yillik != null)     A.tufe      = V.tufe_yillik;
+    if(V.kfe_ank_yillik != null)  A.kfeAnk    = V.kfe_ank_yillik;
+    if(V.kfe_tr_yillik != null)   A.kfeTr     = V.kfe_tr_yillik;
+    if(V.kfe_ank_endeks != null)  A.kfeEndeks = V.kfe_ank_endeks;
+    A.sonVeriAy = V.son_ay;
+  }
 
-  if(kaynak === "yedek"){
-    $("tazelik").style.color = "#A93A31";
-    uyariGoster("Canlı veri alınamadı",
-      "veri.json okunamadı. Ekrandaki rakamlar son bilinen değerler — güncel değil. " +
-      "GitHub Actions'ta iş akışının çalıştığını kontrol et.");
-  } else if(g && (Date.now() - g.getTime()) > 5*24*3600*1000){
+  const g = V.guncelleme ? new Date(V.guncelleme) : null;
+  $("tazelik").textContent = kaynak === "elle"
+    ? "elle giriş"
+    : (g ? `${V.son_ay} · ${g.toLocaleDateString("tr-TR",{day:"2-digit",month:"2-digit"})}`
+         : `${V.son_ay} · ${kaynak}`);
+
+  if(kaynak === "elle"){
+    // Normal calisma bicimi - uyari yok, sadece gosterge
+  } else if(g && (Date.now() - g.getTime()) > 40*24*3600*1000){
     uyariGoster("Veri bayat",
-      "Son güncelleme 5 günden eski. Otomatik iş akışı durmuş olabilir.");
+      "Son güncelleme 40 günden eski. Ayarlardan TCMB verilerini elle güncelle.");
   } else if(Array.isArray(V.hatalar) && V.hatalar.length){
     uyariGoster(`${V.hatalar.length} seri alınamadı`,
       V.hatalar.join(" · ") + " — ana veriler sağlam, bu seriler sinyal listesinde görünmez.");
