@@ -1,0 +1,92 @@
+name: Veri topla
+
+# GUVENLIK NOTU
+# EVDS anahtari yalnizca GitHub Secrets icinde durur ve sadece
+# "Veriyi cek" adimina ortam degiskeni olarak verilir.
+# Hicbir adimda ekrana basilmaz, dosyaya yazilmaz, commit'lenmez.
+# GitHub secrets degerlerini log ciktisinda otomatik maskeler.
+
+on:
+  schedule:
+    # Her gun 06:00 UTC = Turkiye saati 09:00
+    - cron: "0 6 * * *"
+  workflow_dispatch:      # Actions sekmesinden elle de calistirilabilir
+
+permissions:
+  contents: write
+
+jobs:
+  topla:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@v4
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Teshis adimi: EVDS'e gercekten ulasilabiliyor mu, hangi adres bicimi
+      # calisiyor? Anahtar -H ile gonderilir, ekrana asla basilmaz.
+      # Bu adim hata verse bile is akisi devam eder.
+      - name: Teshis
+        continue-on-error: true
+        env:
+          EVDS_ANAHTARI: ${{ secrets.EVDS_ANAHTARI }}
+        run: |
+          P="series=TP.FG.J0&startDate=01-01-2026&endDate=01-08-2026&type=json"
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+
+          echo "=== 1) EVDS ana sayfasina ulasilabiliyor mu? ==="
+          curl -s -o /dev/null --max-time 20 \
+            -w "   HTTP %{http_code} / %{time_total}s\n" \
+            https://evds2.tcmb.gov.tr/ || echo "   ULASILAMADI (ag engeli olabilir)"
+
+          echo "=== 2) API - soru isaretsiz bicim ==="
+          curl -s --max-time 25 -H "key: $EVDS_ANAHTARI" -H "User-Agent: $UA" \
+            -w "\n   [HTTP %{http_code} / %{time_total}s]\n" \
+            "https://evds2.tcmb.gov.tr/service/evds/$P" 2>&1 | head -c 350
+
+          echo ""
+          echo "=== 3) API - soru isaretli bicim ==="
+          curl -s --max-time 25 -H "key: $EVDS_ANAHTARI" -H "User-Agent: $UA" \
+            -w "\n   [HTTP %{http_code} / %{time_total}s]\n" \
+            "https://evds2.tcmb.gov.tr/service/evds/?$P" 2>&1 | head -c 350
+
+          echo ""
+          echo "=== Teshis bitti ==="
+
+      - name: Veriyi cek
+        env:
+          EVDS_ANAHTARI: ${{ secrets.EVDS_ANAHTARI }}
+        run: python toplayici.py
+
+      # Emniyet agi: anahtar bir sekilde cikti dosyasina sizdiysa
+      # commit atilmaz, is akisi hata verip durur.
+      - name: Guvenlik kontrolu
+        env:
+          EVDS_ANAHTARI: ${{ secrets.EVDS_ANAHTARI }}
+        run: |
+          if [ ! -f veri.json ]; then
+            echo "veri.json bulunamadi."
+            exit 1
+          fi
+          if [ -n "$EVDS_ANAHTARI" ] && grep -qF -- "$EVDS_ANAHTARI" veri.json; then
+            echo "GUVENLIK HATASI: veri.json icinde API anahtari bulundu."
+            echo "Commit iptal edildi. Anahtari YENILE ve kodu kontrol et."
+            exit 1
+          fi
+          echo "veri.json temiz - anahtar icermiyor."
+
+      - name: Degisiklik varsa kaydet
+        run: |
+          git config user.name  "veri-botu"
+          git config user.email "veri-botu@users.noreply.github.com"
+          if git diff --quiet -- veri.json; then
+            echo "Degisiklik yok, commit atlaniyor."
+          else
+            git add veri.json
+            git commit -m "veri guncellendi $(date -u +%Y-%m-%d)"
+            git push
+          fi
