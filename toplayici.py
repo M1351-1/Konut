@@ -67,10 +67,10 @@ def log(m=""):
     print(redakte(m) if m else "", flush=True)
 
 
-def _istek(url, basliklar):
+def _istek(url, basliklar, sure=30):
     """Tek bir HTTP istegi atar, ham metni dondurur."""
     r = request.Request(url, headers=basliklar)
-    with request.urlopen(r, timeout=60) as y:
+    with request.urlopen(r, timeout=sure) as y:
         return y.read().decode("utf-8", "replace")
 
 
@@ -78,18 +78,23 @@ def evds_cek(kodlar):
     """
     EVDS'den seri ceker.
 
-    Once header ile dener (anahtar URL'ye girmez - tercih edilen yol).
-    EVDS header'i kabul etmezse query string'e duser. O durumda bile
-    anahtar hicbir log'a veya dosyaya yazilmaz: URL asla loglanmaz,
-    redakte() tum ciktilari tarar, veri.json yazilmadan once kontrol edilir.
+    EVDS'in belgelenen adres bicimi soru isaretsizdir:
+        /service/evds/series=...&startDate=...
+    Bazi kurulumlarda soru isaretli hali de calisir, o yuzden ikisi de denenir.
+    Kimlik once header ile gonderilir (anahtar URL'ye girmez); kabul edilmezse
+    query yontemine dusulur.
+
+    Guvenlik: URL hicbir kosulda loglanmaz, redakte() tum ciktilari tarar,
+    veri.json yazilmadan once anahtara karsi taranir.
     """
     bit = datetime.now().strftime("%d-%m-%Y")
-    temel = "https://evds2.tcmb.gov.tr/service/evds/?" + parse.urlencode({
+    param = parse.urlencode({
         "series": "-".join(kodlar),
         "startDate": BASLANGIC,
         "endDate": bit,
         "type": "json",
     })
+    kok = "https://evds2.tcmb.gov.tr/service/evds/"
     ortak = {
         "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                        "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -97,43 +102,44 @@ def evds_cek(kodlar):
         "Accept": "application/json, text/plain, */*",
     }
 
-    denemeler = [
-        ("header", temel, {**ortak, "key": _ANAHTAR}),
-        ("query",  temel + "&key=" + parse.quote(_ANAHTAR), dict(ortak)),
-    ]
+    denemeler = []
+    for sekil, taban in (("duz", kok + param), ("soru", kok + "?" + param)):
+        denemeler.append((sekil + "/header", taban, {**ortak, "key": _ANAHTAR}))
+        denemeler.append((sekil + "/query",
+                          taban + "&key=" + parse.quote(_ANAHTAR), dict(ortak)))
 
     son_hata = "bilinmeyen"
     for yontem, url, basliklar in denemeler:
         try:
-            ham = _istek(url, basliklar)
+            ham = _istek(url, basliklar, sure=30)
         except error.HTTPError as e:
-            son_hata = ("yetki reddedildi - anahtar gecersiz olabilir"
-                        if e.code in (401, 403) else f"sunucu HTTP {e.code} dondu")
+            son_hata = f"{yontem}: HTTP {e.code}"
+            log(f"  {son_hata}")
             continue
-        except error.URLError:
-            son_hata = "baglanti kurulamadi"
-            continue
-        except TimeoutError:
-            son_hata = "zaman asimi"
+        except (error.URLError, TimeoutError):
+            son_hata = f"{yontem}: cevap yok (zaman asimi)"
+            log(f"  {son_hata}")
             continue
 
         kirp = ham.lstrip()[:120]
         if kirp.startswith("<"):
-            son_hata = f"HTML sayfa dondu ({yontem}): {redakte(kirp[:80])}"
+            son_hata = f"{yontem}: HTML dondu -> {redakte(kirp[:70])}"
+            log(f"  {son_hata}")
             continue
 
         try:
             veri = json.loads(ham)
         except json.JSONDecodeError:
-            son_hata = f"JSON degil ({yontem}): {redakte(kirp[:80])}"
+            son_hata = f"{yontem}: JSON degil -> {redakte(kirp[:70])}"
+            log(f"  {son_hata}")
             continue
 
         if not isinstance(veri, dict) or not veri.get("items"):
-            son_hata = f"yanit bos ({yontem}) - seri kodu yanlis olabilir"
+            son_hata = f"{yontem}: yanit bos - seri kodu yanlis olabilir"
+            log(f"  {son_hata}")
             continue
 
-        if yontem == "query":
-            log("  not: header kabul edilmedi, query yontemi kullanildi")
+        log(f"  BASARILI yontem: {yontem}")
         return veri["items"]
 
     raise RuntimeError(son_hata)
@@ -294,4 +300,3 @@ if __name__ == "__main__":
     except Exception as e:
         log(f"BEKLENMEYEN HATA: {type(e).__name__}: {redakte(e)}")
         sys.exit(1)
-
