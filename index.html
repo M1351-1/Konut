@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#EDEEE8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Konut Zamanlayıcı</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Konut Zamanlayıcı","short_name":"Konut","display":"standalone","background_color":"%23EDEEE8","theme_color":"%23EDEEE8","start_url":"."}'>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%231B2A33'/%3E%3Cpath d='M14 34 L32 18 L50 34' fill='none' stroke='%232E7D63' stroke-width='5'/%3E%3Crect x='22' y='34' width='20' height='14' fill='%23EDEEE8'/%3E%3C/svg%3E">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:#EDEEE8;color:#1B2A33;margin:0;padding:14px;
+padding-bottom:calc(24px + env(safe-area-inset-bottom));
+font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.num{font-family:ui-monospace,"SF Mono","Roboto Mono",Menlo,monospace;
+font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.eyebrow{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#6B7D87;font-weight:600}
+.panel{background:#fff;border:1px solid #CFD4CF;padding:14px;margin-bottom:10px}
+.hero{font-size:56px;font-weight:700;line-height:.92;margin:6px 0 0}
+.sub{font-size:13px;color:#6B7D87;margin-top:6px}
+.dur{font-size:15px;font-weight:600;margin-top:12px;line-height:1.4}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kart{background:#fff;border:1px solid #CFD4CF;padding:10px}
+.kart .lab{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#6B7D87;font-weight:600}
+.kart .v{font-size:19px;font-weight:700;margin-top:5px}
+.sen{display:flex;justify-content:space-between;align-items:baseline;
+padding:9px 0;border-bottom:1px solid #E4E7E2}
+.sen:last-child{border-bottom:none}
+.sen .ad{font-size:13px;font-weight:600}
+.sen .not{font-size:10px;color:#6B7D87;margin-top:2px}
+label{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+color:#6B7D87;font-weight:600;margin-bottom:3px}
+input{width:100%;padding:10px;border:1px solid #CFD4CF;background:#FAFBF9;
+color:#1B2A33;font-size:16px;font-family:ui-monospace,Menlo,monospace;border-radius:0}
+input:focus{outline:2px solid #1B2A33;outline-offset:-2px}
+button{font-family:inherit;font-size:12px;font-weight:600;letter-spacing:.06em;
+text-transform:uppercase;padding:12px 14px;border:1px solid #1B2A33;
+background:#1B2A33;color:#EDEEE8;border-radius:0;width:100%}
+button.alt{background:transparent;color:#1B2A33}
+button:focus-visible{outline:2px solid #B8791F;outline-offset:2px}
+.satir{margin-bottom:10px}
+.sinyal{display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-bottom:1px solid #E4E7E2}
+.sinyal:last-child{border-bottom:none}
+.nokta{width:8px;height:8px;flex:0 0 8px;margin-top:5px}
+.sinyal .t{font-size:12px;font-weight:600}
+.sinyal .a{font-size:10px;color:#6B7D87;margin-top:1px}
+.mini{font-size:10px;color:#6B7D87;line-height:1.6}
+h3{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6B7D87;
+font-weight:600;margin:0 0 8px}
+.uyari{background:#FAEEDA;border:1px solid #EF9F27;padding:10px;margin-bottom:10px}
+.uyari .b{font-size:11px;font-weight:600;color:#854F0B}
+.uyari .c{font-size:10px;color:#854F0B;margin-top:4px;line-height:1.5}
+</style>
+</head>
+<body>
+
+<div style="display:flex;justify-content:space-between;align-items:baseline">
+  <span class="eyebrow">Konut Zamanlayıcı · Ankara</span>
+  <span class="eyebrow num" id="tazelik">yükleniyor</span>
+</div>
+
+<div class="uyari" id="uyariKutu" style="display:none;margin-top:8px">
+  <div class="b" id="uyariBaslik"></div>
+  <div class="c" id="uyariIcerik"></div>
+</div>
+
+<div class="panel" style="margin-top:8px">
+  <span class="eyebrow">Bugün alabileceğin</span>
+  <div class="hero num" id="hM2">—</div>
+  <div class="eyebrow" style="margin-top:2px">metrekare</div>
+  <div class="sub num" id="hDetay"></div>
+  <div class="dur" id="hDurum"></div>
+</div>
+
+<div class="grid">
+  <div class="kart"><div class="lab">Alım gücün</div><div class="v num" id="kGuc">—</div></div>
+  <div class="kart"><div class="lab">m² fiyatı bugün</div><div class="v num" id="kM2">—</div></div>
+  <div class="kart"><div class="lab">Azami kredi</div><div class="v num" id="kKredi">—</div></div>
+  <div class="kart"><div class="lab">Ankara konut · reel</div><div class="v num" id="kReel">—</div></div>
+</div>
+
+<div class="panel">
+  <h3>Senaryolar · 24 ay</h3>
+  <div id="grafik"></div>
+  <div id="senaryolar" style="margin-top:10px"></div>
+  <div class="mini" style="margin-top:10px">
+    Her senaryonun tepe noktası, alım gücünün metrekare cinsinden en yüksek olduğu ay.
+    O aydan sonra beklemek kaybettirmeye başlar.
+  </div>
+</div>
+
+<div class="panel">
+  <h3>Sinyaller</h3>
+  <div id="sinyaller"></div>
+</div>
+
+<button class="alt" id="btnAyar">Ayarları aç</button>
+
+<div class="panel" id="ayarlar" style="display:none;margin-top:10px">
+  <h3>Senin durumun</h3>
+  <div class="grid" style="margin-bottom:12px">
+    <div><label>Birikim (TL)</label><input type="number" id="iBirikim"></div>
+    <div><label>Aylık tasarruf (TL)</label><input type="number" id="iTasarruf"></div>
+    <div><label>Aylık ödeyebileceğin (TL)</label><input type="number" id="iOdeme"></div>
+    <div><label>Kredi vadesi (ay)</label><input type="number" id="iVade"></div>
+  </div>
+
+  <h3>Hedef mahalle</h3>
+  <div class="satir">
+    <label>Baktığın yerde m² fiyatı (TL)</label>
+    <input type="number" id="iM2">
+    <div class="mini" style="margin-top:5px">
+      Sahibinden'de hedef mahallendeki birkaç ilanın fiyatını m²'ye böl, ortalamasını yaz.
+      Uygulama bunu KFE Ankara endeksiyle kendi güncelleyecek — bir daha girmene gerek yok.
+    </div>
+  </div>
+
+  <h3>Piyasa</h3>
+  <div class="grid" style="margin-bottom:12px">
+    <div><label>Konut kredisi aylık %</label><input type="number" step="0.01" id="iMort"></div>
+    <div><label>Birikim net yıllık %</label><input type="number" step="0.1" id="iPpf"></div>
+  </div>
+
+  <h3>İlk Evim varsayımları</h3>
+  <div class="grid" style="margin-bottom:12px">
+    <div><label>Faiz aylık %</label><input type="number" step="0.01" id="iEvFaiz"></div>
+    <div><label>Vade (ay)</label><input type="number" id="iEvVade"></div>
+    <div><label>Kaçıncı ayda çıkar</label><input type="number" id="iEvAy"></div>
+    <div><label>Fiyat sıçraması %</label><input type="number" id="iEvSicra"></div>
+  </div>
+
+  <button id="btnKaydet">Kaydet</button>
+  <div class="num" id="kayitNot" style="font-size:11px;margin-top:8px"></div>
+
+  <div class="mini" style="margin-top:14px;border-top:1px solid #CFD4CF;padding-top:10px">
+    <strong>Gizlilik:</strong> Buraya girdiğin hiçbir rakam internete gönderilmez.
+    Tamamı yalnızca bu cihazın tarayıcı hafızasında (localStorage) tutulur.
+    Uygulama dışarıya tek bir istek atar: kendi sitendeki <code>veri.json</code>
+    dosyasını okumak. O dosya sadece TCMB'nin kamuya açık serilerini içerir.
+  </div>
+</div>
+
+<div class="mini" style="margin-top:14px">
+  Enflasyon ve konut fiyat endeksi her sabah TCMB'den otomatik güncellenir.
+  Kredi faizi, birikim getirisi ve mahalle m² fiyatını sen girersin.<br><br>
+  Bu bir hesap aracıdır, yatırım tavsiyesi değildir. Senaryolar varsayıma dayanır;
+  gerçekleşen sonuç farklı olur.
+</div>
+
+<script>
+/* ---------------------------------------------------------------
+   GUVENLIK
+   Bu dosya EVDS API'ye BAGLANMAZ ve hicbir API anahtari icermez.
+   Tek dis istegi ayni klasordeki veri.json dosyasidir; o dosyayi
+   GitHub Actions olusturur ve yalnizca kamuya acik TCMB verisi icerir.
+   Kullanicinin finansal bilgileri yalnizca localStorage'da tutulur,
+   hicbir yere gonderilmez.
+   --------------------------------------------------------------- */
+const VERI_URL = "veri.json";
+const AYAR_KEY = "konut.ayarlar";
+const VERI_KEY = "konut.veri";
+const GECMIS_KEY = "konut.gecmis";
+
+const VARSAYILAN = {
+  birikim: 1500000, tasarruf: 35000, odeme: 45000, vade: 120,
+  m2: 32000, mort: 2.65, ppf: 38,
+  evFaiz: 1.20, evVade: 180, evAy: 6, evSicra: 25
+};
+
+// veri.json gelmezse kullanilacak yedek (son bilinen kamuya acik degerler)
+const YEDEK = {
+  guncelleme: null, son_ay: "2026-07", tufe_yillik: 31.75,
+  kfe_ank_yillik: 26.6, kfe_tr_yillik: 25.0, kfe_ank_endeks: 234.8,
+  seri: { kfe_ank: [], reel_ank: [], reel_tr: [] },
+  reel: { ank_zirveden: null, ank_zirve_ay: "" },
+  opsiyonel: {}, hatalar: []
+};
+
+const $ = id => document.getElementById(id);
+const tl = n => new Intl.NumberFormat("tr-TR",{maximumFractionDigits:0}).format(Math.round(n));
+const f1 = n => (n>=0?"+":"") + n.toFixed(1);
+
+let A = {...VARSAYILAN}, V = {...YEDEK};
+
+/* ---------- finans ---------- */
+function maxKredi(odeme, aylikFaiz, vadeAy){
+  const i = aylikFaiz/100;
+  if(!(odeme>0) || !(vadeAy>0)) return 0;
+  if(i <= 0.0000001) return odeme * vadeAy;
+  return odeme * (1 - Math.pow(1+i, -vadeAy)) / i;
+}
+const aylikOran = yillikYuzde => Math.pow(1 + yillikYuzde/100, 1/12) - 1;
+
+function birikimT(t){
+  const r = aylikOran(A.ppf);
+  const anapara = A.birikim * Math.pow(1+r, t);
+  const katki = r > 0 ? A.tasarruf * (Math.pow(1+r,t)-1)/r : A.tasarruf * t;
+  return anapara + katki;
+}
+
+/* ---------- senaryolar ---------- */
+function senaryolar(){
+  const konutAylik = aylikOran(V.kfe_ank_yillik ?? 25);
+  const m2Simdi = A.m2;
+  const AY = 24;
+
+  const kur = (ad, not, renk, faizFn, fiyatFn) => {
+    const nokta = [];
+    for(let t=0; t<=AY; t++){
+      const fz = faizFn(t);
+      nokta.push((birikimT(t) + maxKredi(A.odeme, fz.oran, fz.vade)) / fiyatFn(t));
+    }
+    let tepe = 0;
+    nokta.forEach((v,i)=>{ if(v > nokta[tepe]) tepe = i; });
+    return {ad, not, renk, nokta, tepe, tepeDeger: nokta[tepe], simdi: nokta[0]};
+  };
+
+  const fiyatDuz = t => m2Simdi * Math.pow(1+konutAylik, t);
+
+  return [
+    kur("Mevcut seyir", "faiz sabit, fiyat aynı hızda", "#6B7D87",
+        () => ({oran: A.mort, vade: A.vade}),
+        fiyatDuz),
+
+    kur("Kademeli indirim", "faiz 12 ayda yarıya iner", "#B8791F",
+        t => ({oran: A.mort - (A.mort/2) * Math.min(t,12)/12, vade: A.vade}),
+        fiyatDuz),
+
+    kur("İlk Evim", `${A.evAy}. ayda çıkar, fiyat +%${A.evSicra}`, "#A93A31",
+        t => t >= A.evAy ? {oran: A.evFaiz, vade: A.evVade} : {oran: A.mort, vade: A.vade},
+        t => {
+          const sicrama = t < A.evAy ? 1
+            : 1 + (A.evSicra/100) * Math.min(1, (t - A.evAy + 1)/3);
+          return m2Simdi * Math.pow(1+konutAylik, t) * sicrama;
+        })
+  ];
+}
+
+/* ---------- cizim ---------- */
+function grafikCiz(sen){
+  const W = 340, H = 130, hepsi = sen.flatMap(s=>s.nokta);
+  const lo = Math.min(...hepsi)*0.97, hi = Math.max(...hepsi)*1.03;
+  const x = t => t/24*W, y = v => H - (v-lo)/(hi-lo)*H;
+
+  let svg = `<svg viewBox="0 -6 ${W} ${H+28}" style="width:100%;height:150px" role="img">
+    <title>Senaryolara göre metrekare alım gücü</title>
+    <line x1="0" y1="${H}" x2="${W}" y2="${H}" stroke="#CFD4CF" stroke-width="1"/>`;
+  for(const s of sen){
+    svg += `<polyline fill="none" stroke="${s.renk}" stroke-width="2" points="${
+      s.nokta.map((v,t)=>`${x(t).toFixed(1)},${y(v).toFixed(1)}`).join(" ")}"/>`;
+    svg += `<circle cx="${x(s.tepe).toFixed(1)}" cy="${y(s.tepeDeger).toFixed(1)}"
+      r="4" fill="${s.renk}"/>`;
+  }
+  svg += `<text x="0" y="${H+20}" font-size="10" fill="#6B7D87"
+    font-family="ui-monospace,Menlo,monospace">bugün</text>
+    <text x="${W}" y="${H+20}" font-size="10" fill="#6B7D87" text-anchor="end"
+    font-family="ui-monospace,Menlo,monospace">24 ay</text></svg>`;
+  $("grafik").innerHTML = svg;
+}
+
+function sinyalCiz(){
+  const s = [];
+  const ekle = (renk, t, a) => s.push({renk,t,a});
+  const ops = V.opsiyonel || {};
+
+  ekle("#A93A31", "İlk Evim duyurusu",
+       "Resmî Gazete ve kamu bankalarını izle — tetiğin kendisi bu");
+  ekle(A.mort <= 1.80 ? "#A93A31" : "#6B7D87",
+       `Konut kredisi ${A.mort.toFixed(2)}% aylık`,
+       A.mort <= 1.80 ? "Eşiğin altında — talep çözülüyor"
+                      : `Eşiğe (%1.80) %${((A.mort-1.80)/1.80*100).toFixed(0)} mesafe`);
+  const ry = V.kfe_ank_yillik - V.tufe_yillik;
+  ekle(ry >= 0 ? "#A93A31" : "#2E7D63",
+       `Ankara konut ${V.kfe_ank_yillik}% · enflasyon ${V.tufe_yillik}%`,
+       ry >= 0 ? "Konut enflasyonu geçti — reel dönüş başlamış olabilir"
+               : "Konut hâlâ enflasyonun gerisinde");
+  if(V.reel && V.reel.ank_zirveden != null)
+    ekle("#6B7D87", `Reel zirveden ${f1(V.reel.ank_zirveden)}%`,
+         `Zirve ${V.reel.ank_zirve_ay || "—"}`);
+  if(ops.konut_kredi_faiz)
+    ekle("#6B7D87", `TCMB konut kredisi faizi ${ops.konut_kredi_faiz.deger}%`,
+         `Resmî ortalama · ${ops.konut_kredi_faiz.ay}`);
+
+  $("sinyaller").innerHTML = s.map(x=>
+    `<div class="sinyal"><div class="nokta" style="background:${x.renk}"></div>
+     <div><div class="t">${x.t}</div><div class="a">${x.a}</div></div></div>`).join("");
+}
+
+/* ---------- ana ---------- */
+function hesapla(){
+  const kredi = maxKredi(A.odeme, A.mort, A.vade);
+  const guc = A.birikim + kredi;
+  const m2 = guc / A.m2;
+
+  $("hM2").textContent = m2.toFixed(1);
+  $("hDetay").textContent = `${tl(guc)} TL bütçe · m² ${tl(A.m2)} TL`;
+  $("kGuc").textContent = tl(guc/1000) + "b";
+  $("kM2").textContent = tl(A.m2/1000) + "b";
+  $("kKredi").textContent = tl(kredi/1000) + "b";
+
+  const reelAnk = ((1+V.kfe_ank_yillik/100)/(1+V.tufe_yillik/100)-1)*100;
+  $("kReel").textContent = f1(reelAnk) + "%";
+  $("kReel").style.color = reelAnk < 0 ? "#2E7D63" : "#A93A31";
+
+  const sen = senaryolar();
+  grafikCiz(sen);
+
+  $("senaryolar").innerHTML = sen.map(s=>{
+    const artis = (s.tepeDeger/s.simdi-1)*100;
+    const zaman = s.tepe === 0 ? "şimdi" : `${s.tepe}. ay`;
+    return `<div class="sen">
+      <div><div class="ad" style="color:${s.renk}">${s.ad}</div>
+      <div class="not">${s.not}</div></div>
+      <div style="text-align:right">
+        <div class="num" style="font-size:17px;font-weight:700">${zaman}</div>
+        <div class="not num">${s.tepeDeger.toFixed(1)} m² · ${f1(artis)}%</div>
+      </div></div>`;
+  }).join("");
+
+  const enErken = Math.min(...sen.map(s=>s.tepe));
+  const kritik = sen.find(s=>s.tepe === enErken);
+  $("hDurum").style.color = enErken <= 2 ? "#A93A31" : enErken <= 6 ? "#B8791F" : "#2E7D63";
+  $("hDurum").textContent = enErken === 0
+    ? "Tepe noktadasın — beklemek buradan itibaren kaybettiriyor"
+    : enErken <= 2
+    ? `Tepe çok yakın: ${kritik.ad} senaryosunda ${enErken}. ay. Hazır ol.`
+    : enErken <= 6
+    ? `En erken tepe ${enErken}. ayda (${kritik.ad}). Hazırlığa başla.`
+    : `Beklemek çalışıyor. En erken tepe ${enErken}. ayda.`;
+
+  sinyalCiz();
+  gecmiseYaz(m2);
+}
+
+function gecmiseYaz(m2){
+  try{
+    const g = JSON.parse(localStorage.getItem(GECMIS_KEY) || "[]");
+    const ay = V.son_ay;
+    const y = g.filter(k=>k.ay!==ay).concat([{ay, m2:+m2.toFixed(2)}]);
+    localStorage.setItem(GECMIS_KEY, JSON.stringify(y.slice(-36)));
+  }catch(e){}
+}
+
+const ALANLAR = {iBirikim:"birikim",iTasarruf:"tasarruf",iOdeme:"odeme",iVade:"vade",
+  iM2:"m2",iMort:"mort",iPpf:"ppf",iEvFaiz:"evFaiz",iEvVade:"evVade",
+  iEvAy:"evAy",iEvSicra:"evSicra"};
+
+function formaBas(){ for(const id in ALANLAR) $(id).value = A[ALANLAR[id]]; }
+function formdanOku(){
+  for(const id in ALANLAR){
+    const v = parseFloat($(id).value);
+    if(!isNaN(v)) A[ALANLAR[id]] = v;
+  }
+}
+
+function m2Guncelle(oncekiEndeks){
+  // KFE Ankara endeksi ilerledikce mahalle m2 fiyatini otomatik tasi
+  if(oncekiEndeks && V.kfe_ank_endeks && oncekiEndeks !== V.kfe_ank_endeks){
+    A.m2 = A.m2 * V.kfe_ank_endeks / oncekiEndeks;
+  }
+  A.sonEndeks = V.kfe_ank_endeks;
+}
+
+function uyariGoster(baslik, icerik){
+  $("uyariBaslik").textContent = baslik;
+  $("uyariIcerik").textContent = icerik;
+  $("uyariKutu").style.display = "block";
+}
+
+async function veriYukle(){
+  let kaynak = "yedek";
+  try{
+    const r = await fetch(VERI_URL + "?t=" + Date.now(), {cache:"no-store"});
+    if(!r.ok) throw new Error(r.status);
+    V = await r.json();
+    localStorage.setItem(VERI_KEY, JSON.stringify(V));
+    kaynak = "canlı";
+  }catch(e){
+    try{
+      const c = localStorage.getItem(VERI_KEY);
+      if(c){ V = JSON.parse(c); kaynak = "önbellek"; }
+    }catch(e2){}
+  }
+
+  const g = V.guncelleme ? new Date(V.guncelleme) : null;
+  $("tazelik").textContent = g
+    ? `${V.son_ay} · ${g.toLocaleDateString("tr-TR",{day:"2-digit",month:"2-digit"})}`
+    : `${V.son_ay} · ${kaynak}`;
+
+  if(kaynak === "yedek"){
+    $("tazelik").style.color = "#A93A31";
+    uyariGoster("Canlı veri alınamadı",
+      "veri.json okunamadı. Ekrandaki rakamlar son bilinen değerler — güncel değil. " +
+      "GitHub Actions'ta iş akışının çalıştığını kontrol et.");
+  } else if(g && (Date.now() - g.getTime()) > 5*24*3600*1000){
+    uyariGoster("Veri bayat",
+      "Son güncelleme 5 günden eski. Otomatik iş akışı durmuş olabilir.");
+  } else if(Array.isArray(V.hatalar) && V.hatalar.length){
+    uyariGoster(`${V.hatalar.length} seri alınamadı`,
+      V.hatalar.join(" · ") + " — ana veriler sağlam, bu seriler sinyal listesinde görünmez.");
+  }
+}
+
+$("btnAyar").onclick = () => {
+  const acik = $("ayarlar").style.display === "block";
+  $("ayarlar").style.display = acik ? "none" : "block";
+  $("btnAyar").textContent = acik ? "Ayarları aç" : "Ayarları kapat";
+  if(!acik) $("ayarlar").scrollIntoView({behavior:"smooth", block:"start"});
+};
+
+$("btnKaydet").onclick = () => {
+  formdanOku();
+  try{
+    localStorage.setItem(AYAR_KEY, JSON.stringify(A));
+    $("kayitNot").textContent = "Kaydedildi — yalnızca bu cihazda";
+  }catch(e){
+    $("kayitNot").textContent = "Kaydedilemedi — tarayıcı depolamaya izin vermiyor";
+  }
+  hesapla();
+  setTimeout(()=>{ $("kayitNot").textContent = ""; }, 2500);
+};
+
+Object.keys(ALANLAR).forEach(id=>
+  $(id).addEventListener("input", ()=>{ formdanOku(); hesapla(); }));
+
+(async function baslat(){
+  try{
+    const k = localStorage.getItem(AYAR_KEY);
+    if(k) A = {...VARSAYILAN, ...JSON.parse(k)};
+  }catch(e){}
+  const onceki = A.sonEndeks;
+  await veriYukle();
+  m2Guncelle(onceki);
+  try{ localStorage.setItem(AYAR_KEY, JSON.stringify(A)); }catch(e){}
+  formaBas();
+  hesapla();
+})();
+</script>
+</body>
+</html>
