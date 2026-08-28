@@ -35,6 +35,7 @@ tarayıcıya API anahtarı gömme zorunluluğu ortadan kalkar**.
 | `index.html` | Uygulamanın tamamı: HTML + CSS + JS tek dosyada (~465 satır). Build yok, framework yok, bağımlılık yok. |
 | `toplayici.py` | TCMB EVDS'ten seri çeken toplayıcı. Sadece Python standart kütüphanesi kullanır. `veri.json` üretir. |
 | `.github/workflows/topla.yml` | Her gün 06:00 UTC'de `toplayici.py`'yi çalıştırır, güvenlik kontrolünden geçirir, `veri.json`'u commit'ler. |
+| `.gitignore` | Yalnızca Python ara çıktıları (`__pycache__/`, `*.pyc`) ve işletim sistemi artıkları. `veri.json` **buraya eklenmemelidir** — iş akışının onu commit'lemesi gerekir. |
 | `veri.json` | **Üretilen dosya — elle düzenleme.** Depoda yoksa henüz iş akışı başarılı çalışmamıştır; uygulama yedek değerlere düşer. |
 
 Başka dosya yok. `package.json`, test klasörü, lint yapılandırması, build adımı
